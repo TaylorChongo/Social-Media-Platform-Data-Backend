@@ -1,7 +1,30 @@
+-- Remove old tables so this file can be run again
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS users;
+
 -- Users of the app
 CREATE TABLE users (
     user_id    SERIAL PRIMARY KEY,
     username   VARCHAR(50)  NOT NULL UNIQUE,
     email      VARCHAR(100) NOT NULL UNIQUE,
     created_at TIMESTAMP    DEFAULT NOW()
+);
+
+-- Posts written by users
+CREATE TABLE posts (
+    post_id    SERIAL PRIMARY KEY,
+    user_id    INTEGER   NOT NULL REFERENCES users(user_id),
+    content    TEXT      NOT NULL,
+    metadata   JSONB     DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Comments on posts
+CREATE TABLE comments (
+    comment_id SERIAL PRIMARY KEY,
+    post_id    INTEGER   NOT NULL REFERENCES posts(post_id),
+    user_id    INTEGER   NOT NULL REFERENCES users(user_id),
+    content    TEXT      NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
 );
