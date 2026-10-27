@@ -53,6 +53,9 @@ erDiagram
 
 ```
 social-media-backend/
+├── db/
+│   ├── schema.sql      # creates the 4 tables
+│   └── test_data.sql   # a few sample rows
 ├── docs/
 │   └── er_diagram.md   # ER diagram of the database
 ├── .gitignore
@@ -70,10 +73,19 @@ social-media-backend/
    ```
    .venv\Scripts\activate
    ```
+4. Create the database (inside `psql -U postgres`):
+   ```sql
+   CREATE DATABASE social_media;
+   ```
+5. Create the tables, then add the sample data:
+   ```
+   psql -U postgres -d social_media -f db/schema.sql
+   psql -U postgres -d social_media -f db/test_data.sql
+   ```
 
 ## Progress
 
-- [ ] Day 1: Database schema design and setup
+- [x] Day 1: Database schema design and setup
 - [ ] Day 2: Core user actions with Python transactions
 - [ ] Day 3: Redis caching and MongoDB logging
 - [ ] Day 4: Feed query building and optimization
