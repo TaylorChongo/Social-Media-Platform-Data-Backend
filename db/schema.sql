@@ -1,4 +1,5 @@
 -- Remove old tables so this file can be run again
+DROP TABLE IF EXISTS followers;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS users;
@@ -27,4 +28,13 @@ CREATE TABLE comments (
     user_id    INTEGER   NOT NULL REFERENCES users(user_id),
     content    TEXT      NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Who follows whom: each row means "follower_id follows followee_id"
+CREATE TABLE followers (
+    follower_id INTEGER   NOT NULL REFERENCES users(user_id),
+    followee_id INTEGER   NOT NULL REFERENCES users(user_id),
+    created_at  TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (follower_id, followee_id),
+    CHECK (follower_id <> followee_id)
 );
