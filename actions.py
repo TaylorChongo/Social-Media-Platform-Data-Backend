@@ -29,3 +29,18 @@ def create_post(user_id, content):
     cursor.close()
     connection.close()
     return post_id
+
+
+def add_comment(post_id, user_id, content):
+    """Add a comment by a user on a post and return its comment_id."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "INSERT INTO comments (post_id, user_id, content) VALUES (%s, %s, %s) RETURNING comment_id;",
+        (post_id, user_id, content),
+    )
+    comment_id = cursor.fetchone()[0]
+    connection.commit()
+    cursor.close()
+    connection.close()
+    return comment_id
