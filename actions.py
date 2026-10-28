@@ -59,14 +59,26 @@ def add_comment(post_id, user_id, content):
 
 
 def follow_user(follower_id, followee_id):
-    """Make follower_id follow followee_id."""
+    """Make follower_id follow followee_id (all steps happen, or none)."""
     connection = get_connection()
     try:
         cursor = connection.cursor()
+        # Step 1: add the follow
         cursor.execute(
             "INSERT INTO followers (follower_id, followee_id) VALUES (%s, %s);",
             (follower_id, followee_id),
         )
+        # Step 2: the follower now follows one more person
+        cursor.execute(
+            "UPDATE users SET following_count = following_count + 1 WHERE user_id = %s;",
+            (follower_id,),
+        )
+        # Step 3: the followee now has one more follower
+        cursor.execute(
+            "UPDATE users SET followers_count = followers_count + 1 WHERE user_id = %s;",
+            (followee_id,),
+        )
+        # All steps worked: save them together
         connection.commit()
     except Exception:
         connection.rollback()
@@ -76,14 +88,28 @@ def follow_user(follower_id, followee_id):
 
 
 def unfollow_user(follower_id, followee_id):
-    """Make follower_id stop following followee_id."""
+    """Make follower_id stop following followee_id (all steps happen, or none)."""
     connection = get_connection()
     try:
         cursor = connection.cursor()
+        # Step 1: remove the follow
         cursor.execute(
             "DELETE FROM followers WHERE follower_id = %s AND followee_id = %s;",
             (follower_id, followee_id),
         )
+        # Only change the counts if a follow was really removed
+        if cursor.rowcount == 1:
+            # Step 2: the follower now follows one less person
+            cursor.execute(
+                "UPDATE users SET following_count = following_count - 1 WHERE user_id = %s;",
+                (follower_id,),
+            )
+            # Step 3: the followee now has one less follower
+            cursor.execute(
+                "UPDATE users SET followers_count = followers_count - 1 WHERE user_id = %s;",
+                (followee_id,),
+            )
+        # All steps worked: save them together
         connection.commit()
     except Exception:
         connection.rollback()

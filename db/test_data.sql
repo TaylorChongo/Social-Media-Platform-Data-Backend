@@ -23,3 +23,8 @@ INSERT INTO comments (post_id, user_id, content) VALUES (2, 1, 'Nice, keep going
 INSERT INTO followers (follower_id, followee_id) VALUES (1, 2);  -- ama follows kofi
 INSERT INTO followers (follower_id, followee_id) VALUES (1, 3);  -- ama follows esi
 INSERT INTO followers (follower_id, followee_id) VALUES (2, 1);  -- kofi follows ama
+
+-- Counts that match the follows above
+UPDATE users SET followers_count = 1, following_count = 2 WHERE user_id = 1;  -- ama
+UPDATE users SET followers_count = 1, following_count = 1 WHERE user_id = 2;  -- kofi
+UPDATE users SET followers_count = 1, following_count = 0 WHERE user_id = 3;  -- esi
