@@ -44,3 +44,29 @@ def add_comment(post_id, user_id, content):
     cursor.close()
     connection.close()
     return comment_id
+
+
+def follow_user(follower_id, followee_id):
+    """Make follower_id follow followee_id."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "INSERT INTO followers (follower_id, followee_id) VALUES (%s, %s);",
+        (follower_id, followee_id),
+    )
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+
+def unfollow_user(follower_id, followee_id):
+    """Make follower_id stop following followee_id."""
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "DELETE FROM followers WHERE follower_id = %s AND followee_id = %s;",
+        (follower_id, followee_id),
+    )
+    connection.commit()
+    cursor.close()
+    connection.close()
