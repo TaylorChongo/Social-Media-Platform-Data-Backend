@@ -1,3 +1,5 @@
+from psycopg2.extras import Json
+
 from database import get_connection, release_connection
 
 
@@ -20,14 +22,19 @@ def create_user(username, email):
     return user_id
 
 
-def create_post(user_id, content):
-    """Add a new post for a user and return its post_id."""
+def create_post(user_id, content, metadata=None):
+    """Add a new post for a user and return its post_id.
+
+    metadata is an optional dictionary, e.g. {"tags": ["sql"], "location": "Accra"}
+    """
+    if metadata is None:
+        metadata = {}
     connection = get_connection()
     try:
         cursor = connection.cursor()
         cursor.execute(
-            "INSERT INTO posts (user_id, content) VALUES (%s, %s) RETURNING post_id;",
-            (user_id, content),
+            "INSERT INTO posts (user_id, content, metadata) VALUES (%s, %s, %s) RETURNING post_id;",
+            (user_id, content, Json(metadata)),
         )
         post_id = cursor.fetchone()[0]
         connection.commit()

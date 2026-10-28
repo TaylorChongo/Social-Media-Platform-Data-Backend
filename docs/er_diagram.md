@@ -12,6 +12,8 @@ erDiagram
         int user_id PK
         string username
         string email
+        int followers_count
+        int following_count
         timestamp created_at
     }
 

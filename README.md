@@ -23,6 +23,8 @@ erDiagram
         int user_id PK
         string username
         string email
+        int followers_count
+        int following_count
         timestamp created_at
     }
 
@@ -58,6 +60,10 @@ social-media-backend/
 │   └── test_data.sql   # a few sample rows
 ├── docs/
 │   └── er_diagram.md   # ER diagram of the database
+├── database.py         # connection pool (borrow / return connections)
+├── actions.py          # user actions: create user/post, comment, follow
+├── requirements.txt    # Python packages
+├── .env                # your database password (not in git)
 ├── .gitignore
 └── README.md
 ```
@@ -73,19 +79,46 @@ social-media-backend/
    ```
    .venv\Scripts\activate
    ```
-4. Create the database (inside `psql -U postgres`):
+4. Install the Python packages:
+   ```
+   pip install -r requirements.txt
+   ```
+5. Create a `.env` file in the project folder with your PostgreSQL password:
+   ```
+   DB_PASSWORD=your_password_here
+   ```
+6. Create the database (inside `psql -U postgres`):
    ```sql
    CREATE DATABASE social_media;
    ```
-5. Create the tables, then add the sample data:
+7. Create the tables, then add the sample data:
    ```
    psql -U postgres -d social_media -f db/schema.sql
    psql -U postgres -d social_media -f db/test_data.sql
    ```
 
+## Usage
+
+The functions in `actions.py` can be called from Python:
+
+```python
+from actions import create_user, create_post, add_comment, follow_user, unfollow_user
+
+user_id = create_user("yaw", "yaw@mail.com")
+post_id = create_post(user_id, "My first post!", {"tags": ["intro"], "location": "Accra"})
+add_comment(post_id, 1, "Welcome!")
+follow_user(user_id, 1)     # yaw follows user 1
+unfollow_user(user_id, 1)   # yaw stops following user 1
+```
+
+- Every query uses parameters (`%s`), never string formatting, to prevent SQL injection.
+- Connections come from a pool (`database.py`) and are always returned, even after an error.
+- `follow_user` and `unfollow_user` are **transactional**: the follow row and both users' counts
+  are updated together in one transaction. If any step fails, everything is rolled back.
+
 ## Progress
 
 - [x] Day 1: Database schema design and setup
-- [ ] Day 2: Core user actions with Python transactions
+- [x] Day 2: Core user actions with Python transactions
 - [ ] Day 3: Redis caching and MongoDB logging
 - [ ] Day 4: Feed query building and optimization
