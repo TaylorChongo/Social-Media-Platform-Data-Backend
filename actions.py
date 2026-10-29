@@ -1,6 +1,7 @@
 from psycopg2.extras import Json
 
 from database import get_connection, release_connection
+from feed import clear_follower_timelines, clear_timeline_cache
 
 
 def create_user(username, email):
@@ -43,6 +44,8 @@ def create_post(user_id, content, metadata=None):
         raise
     finally:
         release_connection(connection)
+    # The author's followers now have an out-of-date cached timeline
+    clear_follower_timelines(user_id)
     return post_id
 
 
@@ -92,6 +95,8 @@ def follow_user(follower_id, followee_id):
         raise
     finally:
         release_connection(connection)
+    # The follower's timeline now includes new people
+    clear_timeline_cache(follower_id)
 
 
 def unfollow_user(follower_id, followee_id):
@@ -123,3 +128,5 @@ def unfollow_user(follower_id, followee_id):
         raise
     finally:
         release_connection(connection)
+    # The follower's timeline no longer includes this person
+    clear_timeline_cache(follower_id)

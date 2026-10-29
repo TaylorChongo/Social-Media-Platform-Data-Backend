@@ -58,3 +58,28 @@ def get_cached_timeline(user_id):
     # 3. Save a copy in Redis that expires after CACHE_SECONDS
     redis_client.set(key, json.dumps(timeline), ex=CACHE_SECONDS)
     return timeline
+
+
+def clear_timeline_cache(user_id):
+    """Delete a user's cached timeline so it is rebuilt next time."""
+    redis_client.delete("timeline:" + str(user_id))
+
+
+def clear_follower_timelines(user_id):
+    """Delete the cached timelines of everyone who follows user_id."""
+    connection = get_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT follower_id FROM followers WHERE followee_id = %s;",
+            (user_id,),
+        )
+        rows = cursor.fetchall()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        release_connection(connection)
+
+    for row in rows:
+        clear_timeline_cache(row[0])
