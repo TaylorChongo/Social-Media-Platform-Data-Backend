@@ -1,5 +1,6 @@
 from psycopg2.extras import Json
 
+from activity import log_activity
 from database import get_connection, release_connection
 from feed import clear_follower_timelines, clear_timeline_cache
 
@@ -20,6 +21,7 @@ def create_user(username, email):
         raise
     finally:
         release_connection(connection)
+    log_activity(user_id, "signup", {"username": username})
     return user_id
 
 
@@ -46,6 +48,7 @@ def create_post(user_id, content, metadata=None):
         release_connection(connection)
     # The author's followers now have an out-of-date cached timeline
     clear_follower_timelines(user_id)
+    log_activity(user_id, "post", {"post_id": post_id})
     return post_id
 
 
@@ -65,6 +68,7 @@ def add_comment(post_id, user_id, content):
         raise
     finally:
         release_connection(connection)
+    log_activity(user_id, "comment", {"post_id": post_id, "comment_id": comment_id})
     return comment_id
 
 
@@ -97,6 +101,7 @@ def follow_user(follower_id, followee_id):
         release_connection(connection)
     # The follower's timeline now includes new people
     clear_timeline_cache(follower_id)
+    log_activity(follower_id, "follow", {"followee_id": followee_id})
 
 
 def unfollow_user(follower_id, followee_id):
@@ -110,7 +115,8 @@ def unfollow_user(follower_id, followee_id):
             (follower_id, followee_id),
         )
         # Only change the counts if a follow was really removed
-        if cursor.rowcount == 1:
+        removed = cursor.rowcount == 1
+        if removed:
             # Step 2: the follower now follows one less person
             cursor.execute(
                 "UPDATE users SET following_count = following_count - 1 WHERE user_id = %s;",
@@ -128,5 +134,12 @@ def unfollow_user(follower_id, followee_id):
         raise
     finally:
         release_connection(connection)
-    # The follower's timeline no longer includes this person
-    clear_timeline_cache(follower_id)
+    if removed:
+        # The follower's timeline no longer includes this person
+        clear_timeline_cache(follower_id)
+        log_activity(follower_id, "unfollow", {"followee_id": followee_id})
+
+
+def like_post(user_id, post_id):
+    """Record that a user liked a post (likes are only stored in MongoDB)."""
+    log_activity(user_id, "like", {"post_id": post_id})
