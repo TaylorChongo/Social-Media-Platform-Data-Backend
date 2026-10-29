@@ -1,4 +1,9 @@
-from database import get_connection, release_connection
+import json
+
+from database import get_connection, redis_client, release_connection
+
+# How long a cached timeline stays in Redis before it expires
+CACHE_SECONDS = 60
 
 
 def get_timeline(user_id, limit=20):
@@ -33,6 +38,23 @@ def get_timeline(user_id, limit=20):
             "username": row[1],
             "content": row[2],
             "metadata": row[3],
-            "created_at": row[4],
+            "created_at": row[4].isoformat(),  # date as text, so it can be saved as JSON
         })
+    return timeline
+
+
+def get_cached_timeline(user_id):
+    """Return the timeline from Redis if it is there, otherwise build and cache it."""
+    key = "timeline:" + str(user_id)
+
+    # 1. Try Redis first
+    cached = redis_client.get(key)
+    if cached is not None:
+        return json.loads(cached)
+
+    # 2. Not in Redis: build it from PostgreSQL
+    timeline = get_timeline(user_id)
+
+    # 3. Save a copy in Redis that expires after CACHE_SECONDS
+    redis_client.set(key, json.dumps(timeline), ex=CACHE_SECONDS)
     return timeline
