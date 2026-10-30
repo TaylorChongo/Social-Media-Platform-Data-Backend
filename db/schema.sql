@@ -23,6 +23,9 @@ CREATE TABLE posts (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Speeds up the feed: find a user's posts, already sorted newest first
+CREATE INDEX idx_posts_user_created ON posts (user_id, created_at DESC);
+
 -- Comments on posts
 CREATE TABLE comments (
     comment_id SERIAL PRIMARY KEY,
