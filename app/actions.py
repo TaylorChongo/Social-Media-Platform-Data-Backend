@@ -1,8 +1,8 @@
 from psycopg2.extras import Json
 
-from activity import log_activity
-from database import get_connection, release_connection
-from feed import clear_follower_timelines, clear_timeline_cache
+from app.activity import log_activity
+from app.database import get_connection, release_connection
+from app.feed import clear_follower_timelines, clear_timeline_cache
 
 
 def create_user(username, email):

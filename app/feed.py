@@ -1,6 +1,6 @@
 import json
 
-from database import get_connection, redis_client, release_connection
+from app.database import get_connection, redis_client, release_connection
 
 # How long a cached timeline stays in Redis before it expires
 CACHE_SECONDS = 60

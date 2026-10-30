@@ -61,10 +61,11 @@ social-media-backend/
 │   └── bulk_data.sql   # lots of fake rows, for speed testing
 ├── docs/
 │   └── er_diagram.md   # ER diagram of the database
-├── database.py         # PostgreSQL pool + Redis and MongoDB connections
-├── actions.py          # user actions: create user/post, comment, follow, like
-├── feed.py             # user timelines, cached in Redis
-├── activity.py         # activity logs in MongoDB
+├── app/
+│   ├── database.py     # PostgreSQL pool + Redis and MongoDB connections
+│   ├── actions.py      # user actions: create user/post, comment, follow, like
+│   ├── feed.py         # user timelines, cached in Redis
+│   └── activity.py     # activity logs in MongoDB
 ├── requirements.txt    # Python packages
 ├── .env                # your database password (not in git)
 ├── .gitignore
@@ -107,12 +108,13 @@ social-media-backend/
 
 ## Usage
 
-The functions in `actions.py` can be called from Python:
+The functions in `app/` can be called from Python. Run Python from the project folder
+(not from inside `app/`), so that `app.` imports work:
 
 ```python
-from actions import create_user, create_post, add_comment, follow_user, unfollow_user, like_post
-from activity import get_user_activity
-from feed import get_cached_timeline, get_timeline
+from app.actions import create_user, create_post, add_comment, follow_user, unfollow_user, like_post
+from app.activity import get_user_activity
+from app.feed import get_cached_timeline, get_timeline
 
 user_id = create_user("yaw", "yaw@mail.com")
 post_id = create_post(user_id, "My first post!", {"tags": ["intro"], "location": "Accra"})
@@ -130,7 +132,7 @@ unfollow_user(user_id, 1)   # yaw stops following user 1
 ### PostgreSQL
 
 - Every query uses parameters (`%s`), never string formatting, to prevent SQL injection.
-- Connections come from a pool (`database.py`) and are always returned, even after an error.
+- Connections come from a pool (`app/database.py`) and are always returned, even after an error.
 - `follow_user` and `unfollow_user` are **transactional**: the follow row and both users' counts
   are updated together in one transaction. If any step fails, everything is rolled back.
 - Post metadata (tags, location) is stored as `JSONB`.

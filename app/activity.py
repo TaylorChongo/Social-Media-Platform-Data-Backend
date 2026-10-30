@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from database import activity_logs
+from app.database import activity_logs
 
 
 def log_activity(user_id, action, details=None):
