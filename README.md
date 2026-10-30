@@ -66,6 +66,11 @@ social-media-backend/
 │   ├── actions.py      # user actions: create user/post, comment, follow, like
 │   ├── feed.py         # user timelines, cached in Redis
 │   └── activity.py     # activity logs in MongoDB
+├── tests/
+│   ├── conftest.py     # make_user fixture: creates a user with a random name
+│   ├── test_actions.py # PostgreSQL: users, posts, comments, follows, transactions
+│   ├── test_feed.py    # timeline, pagination, Redis cache
+│   └── test_activity.py # MongoDB activity logs
 ├── requirements.txt    # Python packages
 ├── .env                # your database password (not in git)
 ├── .gitignore
@@ -172,6 +177,28 @@ It was measured with `EXPLAIN ANALYZE` on about 100,000 posts (`bulk_data.sql`):
 - `followers` needed no new index: its primary key `(follower_id, followee_id)` already works as one.
 - **Pagination:** `get_timeline(user_id, limit, page)` uses `LIMIT` and `OFFSET`, so page 1 is
   posts 1-20, page 2 is posts 21-40, and so on. Only page 1 is cached in Redis.
+
+## Testing
+
+The tests use **pytest** and run against your local PostgreSQL, Redis and MongoDB,
+so all three must be running. From the project folder:
+
+```
+python -m pytest -v
+```
+
+Expected result: `18 passed`.
+
+- Use `python -m pytest` (not just `pytest`) so that the `app.` imports work.
+- Every test creates its own users with random names (like `test_3f9a1c2b`), so tests never
+  clash with each other or with existing data. These test users stay in the database;
+  running `db/schema.sql` again removes them.
+
+| File | What it checks |
+|---|---|
+| `test_actions.py` | Users, posts and comments are saved; follow/unfollow update the counts; a failed follow is fully rolled back |
+| `test_feed.py` | Timeline shows only followed users, newest first; pages don't repeat posts; the Redis cache is saved and cleared |
+| `test_activity.py` | Signup, post, comment, follow, unfollow and like are logged in MongoDB |
 
 ## Progress
 
