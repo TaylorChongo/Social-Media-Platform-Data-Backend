@@ -56,8 +56,9 @@ erDiagram
 ```
 social-media-backend/
 ├── db/
-│   ├── schema.sql      # creates the 4 tables
-│   └── test_data.sql   # a few sample rows
+│   ├── schema.sql      # creates the 4 tables and the feed index
+│   ├── test_data.sql   # a few sample rows
+│   └── bulk_data.sql   # lots of fake rows, for speed testing
 ├── docs/
 │   └── er_diagram.md   # ER diagram of the database
 ├── database.py         # PostgreSQL pool + Redis and MongoDB connections
@@ -99,6 +100,10 @@ social-media-backend/
    psql -U postgres -d social_media -f db/schema.sql
    psql -U postgres -d social_media -f db/test_data.sql
    ```
+8. (Optional) Add about 100,000 fake posts to test speed. Run this only once:
+   ```
+   psql -U postgres -d social_media -f db/bulk_data.sql
+   ```
 
 ## Usage
 
@@ -107,7 +112,7 @@ The functions in `actions.py` can be called from Python:
 ```python
 from actions import create_user, create_post, add_comment, follow_user, unfollow_user, like_post
 from activity import get_user_activity
-from feed import get_cached_timeline
+from feed import get_cached_timeline, get_timeline
 
 user_id = create_user("yaw", "yaw@mail.com")
 post_id = create_post(user_id, "My first post!", {"tags": ["intro"], "location": "Accra"})
@@ -116,6 +121,7 @@ follow_user(user_id, 1)     # yaw follows user 1
 like_post(user_id, 1)       # yaw likes post 1
 
 print(get_cached_timeline(user_id))   # posts from people yaw follows, newest first
+print(get_timeline(user_id, page=2))  # the next 20 (older) posts
 print(get_user_activity(user_id))     # yaw's activity log, newest first
 
 unfollow_user(user_id, 1)   # yaw stops following user 1
@@ -149,9 +155,25 @@ unfollow_user(user_id, 1)   # yaw stops following user 1
 - Likes are only stored here, as activities.
 - `get_user_activity(user_id)` returns a user's newest activities.
 
+### Feed query optimization
+
+The feed query (in `get_timeline`) finds the newest posts from the people a user follows.
+It was measured with `EXPLAIN ANALYZE` on about 100,000 posts (`bulk_data.sql`):
+
+| | Before | After |
+|---|---|---|
+| How `posts` is read | Seq Scan: all 100,303 posts | Index Scan: only ~4,700 posts by followed users |
+| Execution time | ~14.6 ms | ~3.8 ms |
+
+- The index `idx_posts_user_created` on `posts (user_id, created_at DESC)` lets PostgreSQL
+  jump straight to each followed user's posts, already sorted newest first.
+- `followers` needed no new index: its primary key `(follower_id, followee_id)` already works as one.
+- **Pagination:** `get_timeline(user_id, limit, page)` uses `LIMIT` and `OFFSET`, so page 1 is
+  posts 1-20, page 2 is posts 21-40, and so on. Only page 1 is cached in Redis.
+
 ## Progress
 
 - [x] Day 1: Database schema design and setup
 - [x] Day 2: Core user actions with Python transactions
 - [x] Day 3: Redis caching and MongoDB logging
-- [ ] Day 4: Feed query building and optimization
+- [x] Day 4: Feed query building and optimization
