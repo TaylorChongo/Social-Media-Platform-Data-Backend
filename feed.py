@@ -6,8 +6,11 @@ from database import get_connection, redis_client, release_connection
 CACHE_SECONDS = 60
 
 
-def get_timeline(user_id, limit=20):
-    """Return the newest posts from the people user_id follows."""
+def get_timeline(user_id, limit=20, page=1):
+    """Return one page of the newest posts from the people user_id follows."""
+    # Page 1 skips 0 posts, page 2 skips 20, page 3 skips 40, ...
+    offset = (page - 1) * limit
+
     connection = get_connection()
     try:
         cursor = connection.cursor()
@@ -19,9 +22,9 @@ def get_timeline(user_id, limit=20):
             JOIN users u ON u.user_id = p.user_id
             WHERE f.follower_id = %s
             ORDER BY p.created_at DESC
-            LIMIT %s;
+            LIMIT %s OFFSET %s;
             """,
-            (user_id, limit),
+            (user_id, limit, offset),
         )
         rows = cursor.fetchall()
     except Exception:
